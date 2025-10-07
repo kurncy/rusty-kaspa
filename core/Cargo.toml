@@ -18,9 +18,16 @@ triggered.workspace = true
 wasm-bindgen.workspace = true
 workflow-log.workspace = true
 
-[target.'cfg(not(target_arch = "wasm32"))'.dependencies]
+[target.'cfg(all(not(target_arch = "wasm32"), not(target_os = "android")))'.dependencies]
 ctrlc = { workspace = true, features = ["termination"] }
 intertrait.workspace = true
+log4rs = { workspace = true, features = ["all_components", "gzip", "background_rotation"] }
+num_cpus.workspace = true
+tokio = { workspace = true, features = ["rt", "macros", "rt-multi-thread", "time"] }
+anyhow = "1.0.97"
+
+[target.'cfg(all(not(target_arch = "wasm32"), target_os = "android"))'.dependencies]
+ctrlc = { workspace = true, features = ["termination"] }
 log4rs = { workspace = true, features = ["all_components", "gzip", "background_rotation"] }
 num_cpus.workspace = true
 tokio = { workspace = true, features = ["rt", "macros", "rt-multi-thread", "time"] }

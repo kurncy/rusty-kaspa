@@ -13,6 +13,7 @@ repository.workspace = true
 devnet-prealloc = []
 wasm32-sdk = []
 default = []
+android-min = []
 
 [dependencies]
 arc-swap.workspace = true
@@ -53,4 +54,3 @@ harness = false
 
 [lints]
 workspace = true
-android-min = []

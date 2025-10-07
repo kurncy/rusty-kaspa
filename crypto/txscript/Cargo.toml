@@ -15,6 +15,7 @@ name = "kip-10"
 [features]
 wasm32-core = []
 wasm32-sdk = []
+android-min = []
 
 [dependencies]
 blake2b_simd.workspace = true
@@ -52,4 +53,3 @@ harness = false
 
 [lints]
 workspace = true
-android-min = []
