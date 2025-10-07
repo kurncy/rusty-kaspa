@@ -12,7 +12,9 @@ use smallvec::SmallVec;
 use std::fmt::{Display, Formatter};
 use thiserror::Error;
 #[cfg(target_arch = "wasm32")]
+#[cfg(target_arch = "wasm32")]
 use wasm_bindgen::prelude::*;
+#[cfg(target_arch = "wasm32")]
 #[cfg(target_arch = "wasm32")]
 use workflow_wasm::{
     convert::{Cast, CastFromJs, TryCastFromJs},
@@ -205,12 +207,7 @@ pub type PayloadVec = SmallVec<[u8; PAYLOAD_VECTOR_SIZE]>;
 /// Kaspa [`Address`] struct that serializes to and from an address format string: `kaspa:qz0s...t8cv`.
 ///
 /// @category Address
-#[derive(PartialEq, Eq, PartialOrd, Ord, Clone, Hash
-	, Serialize, Deserialize, BorshSerialize, BorshDeserialize
-	
-	// CastFromJs and wasm_bindgen are wasm-only
-	
-	)]
+#[derive(PartialEq, Eq, PartialOrd, Ord, Clone, Hash)]
 #[cfg_attr(target_arch = "wasm32", derive(CastFromJs))]
 #[cfg_attr(target_arch = "wasm32", wasm_bindgen(inspectable))]
 pub struct Address {
