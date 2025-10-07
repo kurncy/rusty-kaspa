@@ -23,11 +23,17 @@ impl Core {
         Core { keep_running: AtomicBool::new(true), services: Mutex::new(Vec::new()) }
     }
 
+    #[cfg(target_os = "android")]
     pub fn bind<T>(&self, service: Arc<T>)
     where
-        #[cfg(target_os = "android")]
         T: Service + Send + Sync + 'static,
-        #[cfg(not(target_os = "android"))]
+    {
+        self.services.lock().unwrap().push(service);
+    }
+
+    #[cfg(not(target_os = "android"))]
+    pub fn bind<T>(&self, service: Arc<T>)
+    where
         T: Service + 'static,
     {
         self.services.lock().unwrap().push(service);

@@ -5,7 +5,6 @@ use kaspa_core::service::Service;
 use kaspa_core::task::service::AsyncService;
 use kaspa_core::trace;
 use std::{
-	cfg_if::cfg_if,
     sync::{Arc, Mutex},
     thread::{self, JoinHandle as ThreadJoinHandle},
 };
@@ -36,11 +35,18 @@ impl AsyncRuntime {
         Self { threads, services: Mutex::new(Vec::new()) }
     }
 
+    #[cfg(target_os = "android")]
     pub fn register<T>(&self, service: Arc<T>)
     where
-        #[cfg(target_os = "android")]
         T: AsyncService + Send + Sync + 'static,
-        #[cfg(not(target_os = "android"))]
+    {
+        trace!("async-runtime registering service {}", service.clone().ident());
+        self.services.lock().unwrap().push(service);
+    }
+
+    #[cfg(not(target_os = "android"))]
+    pub fn register<T>(&self, service: Arc<T>)
+    where
         T: AsyncService + 'static,
     {
         trace!("async-runtime registering service {}", service.clone().ident());
