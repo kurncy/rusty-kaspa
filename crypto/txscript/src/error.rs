@@ -1,6 +1,8 @@
 use crate::script_builder;
 use thiserror::Error;
+#[cfg(target_arch = "wasm32")]
 use wasm_bindgen::{JsError, JsValue};
+#[cfg(target_arch = "wasm32")]
 use workflow_wasm::jserror::JsErrorData;
 
 #[derive(Debug, Error, Clone)]
@@ -8,9 +10,11 @@ pub enum Error {
     #[error("{0}")]
     Custom(String),
 
+    #[cfg(target_arch = "wasm32")]
     #[error(transparent)]
     JsValue(JsErrorData),
 
+    #[cfg(target_arch = "wasm32")]
     #[error(transparent)]
     Wasm(#[from] workflow_wasm::error::Error),
 
@@ -20,6 +24,7 @@ pub enum Error {
     #[error("{0}")]
     ParseInt(#[from] std::num::ParseIntError),
 
+    #[cfg(target_arch = "wasm32")]
     #[error(transparent)]
     SerdeWasmBindgen(JsErrorData),
 
@@ -55,6 +60,7 @@ impl From<&str> for Error {
     }
 }
 
+#[cfg(target_arch = "wasm32")]
 impl From<Error> for JsValue {
     fn from(value: Error) -> Self {
         match value {
@@ -64,12 +70,14 @@ impl From<Error> for JsValue {
     }
 }
 
+#[cfg(target_arch = "wasm32")]
 impl From<JsValue> for Error {
     fn from(err: JsValue) -> Self {
         Self::JsValue(err.into())
     }
 }
 
+#[cfg(target_arch = "wasm32")]
 impl From<JsError> for Error {
     fn from(err: JsError) -> Self {
         Self::JsValue(err.into())
@@ -82,6 +90,7 @@ impl From<serde_json::Error> for Error {
     }
 }
 
+#[cfg(target_arch = "wasm32")]
 impl From<serde_wasm_bindgen::Error> for Error {
     fn from(err: serde_wasm_bindgen::Error) -> Self {
         Self::SerdeWasmBindgen(JsValue::from(err).into())
