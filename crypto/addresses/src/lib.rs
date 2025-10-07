@@ -139,7 +139,7 @@ impl TryFrom<&str> for Prefix {
 #[derive(PartialEq, Eq, PartialOrd, Ord, Clone, Copy, Debug, Hash, Serialize, Deserialize, BorshSerialize, BorshDeserialize)]
 #[repr(u8)]
 #[borsh(use_discriminant = true)]
-#[wasm_bindgen(js_name = "AddressVersion")]
+#[cfg_attr(target_arch = "wasm32", wasm_bindgen(js_name = "AddressVersion"))]
 pub enum Version {
     /// PubKey addresses always have the version byte set to 0
     PubKey = 0,
