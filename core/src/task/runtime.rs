@@ -5,6 +5,7 @@ use kaspa_core::service::Service;
 use kaspa_core::task::service::AsyncService;
 use kaspa_core::trace;
 use std::{
+	cfg_if::cfg_if,
     sync::{Arc, Mutex},
     thread::{self, JoinHandle as ThreadJoinHandle},
 };
@@ -14,6 +15,9 @@ use tokio::task::JoinHandle as TaskJoinHandle;
 /// a tokio Runtime to run them.
 pub struct AsyncRuntime {
     threads: usize,
+    #[cfg(target_os = "android")]
+    services: Mutex<Vec<Arc<dyn AsyncService + Send + Sync>>>,
+    #[cfg(not(target_os = "android"))]
     services: Mutex<Vec<Arc<dyn AsyncService>>>,
 }
 
@@ -34,12 +38,20 @@ impl AsyncRuntime {
 
     pub fn register<T>(&self, service: Arc<T>)
     where
-        T: AsyncService,
+        #[cfg(target_os = "android")]
+        T: AsyncService + Send + Sync + 'static,
+        #[cfg(not(target_os = "android"))]
+        T: AsyncService + 'static,
     {
         trace!("async-runtime registering service {}", service.clone().ident());
         self.services.lock().unwrap().push(service);
     }
 
+    #[cfg(target_os = "android")]
+    pub fn find(&self, ident: &'static str) -> Option<Arc<dyn AsyncService + Send + Sync>> {
+        self.services.lock().unwrap().iter().find(|s| (*s).clone().ident() == ident).cloned()
+    }
+    #[cfg(not(target_os = "android"))]
     pub fn find(&self, ident: &'static str) -> Option<Arc<dyn AsyncService>> {
         self.services.lock().unwrap().iter().find(|s| (*s).clone().ident() == ident).cloned()
     }
@@ -97,17 +109,6 @@ impl AsyncRuntime {
         // wait for remaining services to finish
         trace!("async-runtime worker joining remaining {} services", remaining_futures.len());
         try_join_all(remaining_futures).await.unwrap();
-
-        // Stop all async services
-        // All services futures are spawned as tokio tasks to enable parallelism
-        let futures = self
-            .services
-            .lock()
-            .unwrap()
-            .iter()
-            .map(|x| tokio::spawn(x.clone().stop()))
-            .collect::<Vec<TaskJoinHandle<AsyncServiceResult<()>>>>();
-        try_join_all(futures).await.unwrap();
 
         // Drop all services and cleanup
         self.services.lock().unwrap().clear();

@@ -6,6 +6,9 @@ use std::sync::{Arc, Mutex};
 
 pub struct Core {
     pub keep_running: AtomicBool,
+    #[cfg(target_os = "android")]
+    services: Mutex<Vec<Arc<dyn Service + Send + Sync>>>,
+    #[cfg(not(target_os = "android"))]
     services: Mutex<Vec<Arc<dyn Service>>>,
 }
 
@@ -22,11 +25,19 @@ impl Core {
 
     pub fn bind<T>(&self, service: Arc<T>)
     where
-        T: Service,
+        #[cfg(target_os = "android")]
+        T: Service + Send + Sync + 'static,
+        #[cfg(not(target_os = "android"))]
+        T: Service + 'static,
     {
         self.services.lock().unwrap().push(service);
     }
 
+    #[cfg(target_os = "android")]
+    pub fn find(&self, ident: &'static str) -> Option<Arc<dyn Service + Send + Sync>> {
+        self.services.lock().unwrap().iter().find(|s| (*s).clone().ident() == ident).cloned()
+    }
+    #[cfg(not(target_os = "android"))]
     pub fn find(&self, ident: &'static str) -> Option<Arc<dyn Service>> {
         self.services.lock().unwrap().iter().find(|s| (*s).clone().ident() == ident).cloned()
     }
