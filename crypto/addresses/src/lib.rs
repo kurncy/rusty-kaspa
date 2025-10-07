@@ -11,7 +11,9 @@ use serde::{Deserialize, Deserializer, Serialize, Serializer};
 use smallvec::SmallVec;
 use std::fmt::{Display, Formatter};
 use thiserror::Error;
+#[cfg(target_arch = "wasm32")]
 use wasm_bindgen::prelude::*;
+#[cfg(target_arch = "wasm32")]
 use workflow_wasm::{
     convert::{Cast, CastFromJs, TryCastFromJs},
     extensions::object::*,
@@ -56,6 +58,7 @@ pub enum AddressError {
     WASM(String),
 }
 
+#[cfg(target_arch = "wasm32")]
 impl From<workflow_wasm::error::Error> for AddressError {
     fn from(e: workflow_wasm::error::Error) -> Self {
         AddressError::WASM(e.to_string())
@@ -202,15 +205,21 @@ pub type PayloadVec = SmallVec<[u8; PAYLOAD_VECTOR_SIZE]>;
 /// Kaspa [`Address`] struct that serializes to and from an address format string: `kaspa:qz0s...t8cv`.
 ///
 /// @category Address
-#[derive(PartialEq, Eq, PartialOrd, Ord, Clone, Hash, CastFromJs)]
-#[wasm_bindgen(inspectable)]
+#[derive(PartialEq, Eq, PartialOrd, Ord, Clone, Hash
+	, Serialize, Deserialize, BorshSerialize, BorshDeserialize
+	
+	// CastFromJs and wasm_bindgen are wasm-only
+	
+	)]
+#[cfg_attr(target_arch = "wasm32", derive(CastFromJs))]
+#[cfg_attr(target_arch = "wasm32", wasm_bindgen(inspectable))]
 pub struct Address {
-    #[wasm_bindgen(skip)]
-    pub prefix: Prefix,
-    #[wasm_bindgen(skip)]
-    pub version: Version,
-    #[wasm_bindgen(skip)]
-    pub payload: PayloadVec,
+	#[cfg_attr(target_arch = "wasm32", wasm_bindgen(skip))]
+	pub prefix: Prefix,
+	#[cfg_attr(target_arch = "wasm32", wasm_bindgen(skip))]
+	pub version: Version,
+	#[cfg_attr(target_arch = "wasm32", wasm_bindgen(skip))]
+	pub payload: PayloadVec,
 }
 
 impl std::fmt::Debug for Address {
@@ -232,6 +241,7 @@ impl Address {
     }
 }
 
+#[cfg(target_arch = "wasm32")]
 #[wasm_bindgen]
 impl Address {
     #[wasm_bindgen(constructor)]
@@ -504,6 +514,7 @@ impl<'de> Deserialize<'de> for Address {
     }
 }
 
+#[cfg(target_arch = "wasm32")]
 impl TryCastFromJs for Address {
     type Error = AddressError;
     fn try_cast_from<'a, R>(value: &'a R) -> Result<Cast<'a, Self>, Self::Error>
@@ -524,6 +535,7 @@ impl TryCastFromJs for Address {
     }
 }
 
+#[cfg(target_arch = "wasm32")]
 #[wasm_bindgen]
 extern "C" {
     /// WASM (TypeScript) type representing an Address-like object: `Address | string`.
@@ -546,17 +558,6 @@ extern "C" {
     /// @category Address
     #[wasm_bindgen(typescript_type = "Address | undefined")]
     pub type AddressOrUndefinedT;
-}
-
-impl TryFrom<AddressOrStringArrayT> for Vec<Address> {
-    type Error = AddressError;
-    fn try_from(js_value: AddressOrStringArrayT) -> Result<Self, Self::Error> {
-        if js_value.is_array() {
-            js_value.iter().map(Address::try_owned_from).collect::<Result<Vec<Address>, AddressError>>()
-        } else {
-            Err(AddressError::InvalidAddressArray)
-        }
-    }
 }
 
 #[cfg(test)]
