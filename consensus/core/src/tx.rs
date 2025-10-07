@@ -13,8 +13,10 @@ use kaspa_utils::hex::ToHex;
 use kaspa_utils::mem_size::MemSizeEstimator;
 use kaspa_utils::{serde_bytes, serde_bytes_fixed_ref};
 pub use script_public_key::{
-    scriptvec, ScriptPublicKey, ScriptPublicKeyT, ScriptPublicKeyVersion, ScriptPublicKeys, ScriptVec, SCRIPT_VECTOR_SIZE,
+    scriptvec, ScriptPublicKey, ScriptPublicKeyVersion, ScriptPublicKeys, ScriptVec, SCRIPT_VECTOR_SIZE,
 };
+#[cfg(target_arch = "wasm32")]
+pub use script_public_key::ScriptPublicKeyT;
 use serde::{Deserialize, Serialize};
 use std::collections::HashSet;
 use std::sync::atomic::AtomicU64;
@@ -24,6 +26,7 @@ use std::{
     ops::Range,
     str::{self},
 };
+#[cfg(target_arch = "wasm32")]
 use wasm_bindgen::prelude::*;
 
 use crate::mass::{ContextualMasses, NonContextualMasses};
@@ -44,14 +47,14 @@ pub type TransactionId = kaspa_hashes::Hash;
 /// @category Consensus
 #[derive(Debug, Default, Clone, PartialEq, Eq, Serialize, Deserialize, BorshSerialize, BorshDeserialize)]
 #[serde(rename_all = "camelCase")]
-#[wasm_bindgen(inspectable, js_name = TransactionUtxoEntry)]
+#[cfg_attr(target_arch = "wasm32", wasm_bindgen(inspectable, js_name = TransactionUtxoEntry))]
 pub struct UtxoEntry {
     pub amount: u64,
-    #[wasm_bindgen(js_name = scriptPublicKey, getter_with_clone)]
+    #[cfg_attr(target_arch = "wasm32", wasm_bindgen(js_name = scriptPublicKey, getter_with_clone))]
     pub script_public_key: ScriptPublicKey,
-    #[wasm_bindgen(js_name = blockDaaScore)]
+    #[cfg_attr(target_arch = "wasm32", wasm_bindgen(js_name = blockDaaScore))]
     pub block_daa_score: u64,
-    #[wasm_bindgen(js_name = isCoinbase)]
+    #[cfg_attr(target_arch = "wasm32", wasm_bindgen(js_name = isCoinbase))]
     pub is_coinbase: bool,
 }
 
