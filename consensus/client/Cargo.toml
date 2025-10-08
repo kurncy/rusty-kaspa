@@ -9,7 +9,14 @@ license.workspace = true
 repository.workspace = true
 
 [features]
-wasm32-sdk = []
+wasm32-sdk = [
+    "dep:js-sys",
+    "dep:serde-wasm-bindgen",
+    "dep:wasm-bindgen",
+    "dep:workflow-wasm",
+    "dep:workflow-log",
+    "dep:kaspa-wasm-core",
+]
 wasm32-types = []
 
 [dependencies]
@@ -19,24 +26,25 @@ kaspa-hashes.workspace = true
 kaspa-math.workspace = true
 kaspa-txscript.workspace = true
 kaspa-utils.workspace = true
-kaspa-wasm-core.workspace = true
+# wasm support crates optional by default
+kaspa-wasm-core = { workspace = true, optional = true }
 
 ahash.workspace = true
 cfg-if.workspace = true
 faster-hex.workspace = true
 hex.workspace = true
-js-sys.workspace = true
+js-sys = { workspace = true, optional = true }
 rand.workspace = true
 secp256k1.workspace = true
 serde_json.workspace = true
-serde-wasm-bindgen.workspace = true
+serde-wasm-bindgen = { workspace = true, optional = true }
 serde.workspace = true
 thiserror.workspace = true
-wasm-bindgen.workspace = true
+wasm-bindgen = { workspace = true, optional = true }
 itertools.workspace = true
 
-workflow-wasm.workspace = true
-workflow-log.workspace = true
+workflow-wasm = { workspace = true, optional = true }
+workflow-log = { workspace = true, optional = true }
 
 [lints]
 workspace = true
