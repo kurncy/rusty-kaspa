@@ -13,6 +13,9 @@ use ahash::AHashMap;
 use cctx::VerifiableTransaction;
 use kaspa_addresses::Address;
 use kaspa_consensus_core::subnets::SubnetworkId;
+#[cfg(feature = "wasm32-sdk")]
+use kaspa_math::wasm::JsValue;
+#[cfg(feature = "wasm32-sdk")]
 use workflow_wasm::serde::{from_value, to_value};
 
 pub type SignedTransactionIndexType = u32;
@@ -229,10 +232,12 @@ pub struct SerializableTransaction {
 }
 
 impl SerializableTransaction {
+    #[cfg(feature = "wasm32-sdk")]
     pub fn serialize_to_object(&self) -> Result<JsValue> {
         Ok(to_value(self)?)
     }
 
+    #[cfg(feature = "wasm32-sdk")]
     pub fn deserialize_from_object(object: JsValue) -> Result<Self> {
         Ok(from_value(object)?)
     }

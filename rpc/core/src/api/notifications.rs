@@ -15,8 +15,10 @@ use kaspa_notify::{
 };
 use serde::{Deserialize, Serialize};
 use std::sync::Arc;
+#[cfg(feature = "wasm32-sdk")]
 use wasm_bindgen::JsValue;
 use workflow_serializer::prelude::*;
+#[cfg(feature = "wasm32-sdk")]
 use workflow_wasm::serde::to_value;
 
 full_featured! {
@@ -53,6 +55,7 @@ pub enum Notification {
 
 impl Notification {
     ///
+    #[cfg(feature = "wasm32-sdk")]
     pub fn to_value(&self) -> std::result::Result<JsValue, serde_wasm_bindgen::Error> {
         match self {
             Notification::BlockAdded(v) => to_value(&v),

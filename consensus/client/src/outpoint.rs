@@ -9,7 +9,7 @@ use cfg_if::cfg_if;
 use crate::imports::*;
 use crate::result::Result;
 
-#[wasm_bindgen(typescript_custom_section)]
+#[cfg_attr(feature = "wasm32-sdk", wasm_bindgen(typescript_custom_section))]
 const TS_TRANSACTION_OUTPOINT: &'static str = r#"
 /**
  * Interface defines the structure of a transaction outpoint (used by transaction input).
@@ -54,6 +54,7 @@ impl From<cctx::TransactionOutpoint> for TransactionOutpointInner {
     }
 }
 
+#[cfg(feature = "wasm32-sdk")]
 impl TryFrom<&JsValue> for TransactionOutpointInner {
     type Error = Error;
     fn try_from(js_value: &JsValue) -> Result<Self, Self::Error> {
@@ -81,9 +82,10 @@ impl TryFrom<&JsValue> for TransactionOutpointInner {
 /// use the `TransactionOutpoint::new` constructor. (in JavaScript
 /// use `new TransactionOutpoint(transactionId, index)`).
 /// @category Consensus
-#[derive(Clone, Debug, Serialize, Deserialize, CastFromJs)]
+#[derive(Clone, Debug, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
-#[wasm_bindgen(inspectable)]
+#[cfg_attr(feature = "wasm32-sdk", derive(CastFromJs))]
+#[cfg_attr(feature = "wasm32-sdk", wasm_bindgen(inspectable))]
 pub struct TransactionOutpoint {
     inner: Arc<TransactionOutpointInner>,
 }
@@ -154,6 +156,7 @@ impl std::fmt::Display for TransactionOutpoint {
     }
 }
 
+#[cfg(feature = "wasm32-sdk")]
 impl TryFrom<&JsValue> for TransactionOutpoint {
     type Error = Error;
     fn try_from(js_value: &JsValue) -> Result<Self, Self::Error> {

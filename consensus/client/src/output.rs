@@ -6,7 +6,7 @@
 
 use crate::imports::*;
 
-#[wasm_bindgen(typescript_custom_section)]
+#[cfg_attr(feature = "wasm32-sdk", wasm_bindgen(typescript_custom_section))]
 const TS_TRANSACTION_OUTPUT: &'static str = r#"
 /**
  * Interface defining the structure of a transaction output.
@@ -32,6 +32,7 @@ export interface ITransactionOutputVerboseData {
 }
 "#;
 
+#[cfg(feature = "wasm32-sdk")]
 #[wasm_bindgen]
 extern "C" {
     /// WASM (TypeScript) type representing `ITransactionOutput | TransactionOutput`
@@ -58,9 +59,10 @@ pub struct TransactionOutputInner {
 
 /// Represents a Kaspad transaction output
 /// @category Consensus
-#[derive(Clone, Debug, Serialize, Deserialize, CastFromJs)]
+#[derive(Clone, Debug, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
-#[wasm_bindgen(inspectable)]
+#[cfg_attr(feature = "wasm32-sdk", derive(CastFromJs))]
+#[cfg_attr(feature = "wasm32-sdk", wasm_bindgen(inspectable))]
 pub struct TransactionOutput {
     inner: Arc<Mutex<TransactionOutputInner>>,
 }
@@ -83,6 +85,7 @@ impl TransactionOutput {
     }
 }
 
+#[cfg(feature = "wasm32-sdk")]
 #[wasm_bindgen]
 impl TransactionOutput {
     #[wasm_bindgen(constructor)]
@@ -137,6 +140,7 @@ impl From<&TransactionOutput> for cctx::TransactionOutput {
     }
 }
 
+#[cfg(feature = "wasm32-sdk")]
 impl TryCastFromJs for TransactionOutput {
     type Error = Error;
     fn try_cast_from<'a, R>(value: &'a R) -> std::result::Result<Cast<'a, Self>, Self::Error>

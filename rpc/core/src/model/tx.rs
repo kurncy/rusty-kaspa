@@ -98,12 +98,14 @@ impl From<RpcTransactionOutpoint> for TransactionOutpoint {
     }
 }
 
+#[cfg(feature = "wasm32-sdk")]
 impl From<kaspa_consensus_client::TransactionOutpoint> for RpcTransactionOutpoint {
     fn from(outpoint: kaspa_consensus_client::TransactionOutpoint) -> Self {
         TransactionOutpoint::from(outpoint).into()
     }
 }
 
+#[cfg(feature = "wasm32-sdk")]
 impl From<RpcTransactionOutpoint> for kaspa_consensus_client::TransactionOutpoint {
     fn from(outpoint: RpcTransactionOutpoint) -> Self {
         TransactionOutpoint::from(outpoint).into()

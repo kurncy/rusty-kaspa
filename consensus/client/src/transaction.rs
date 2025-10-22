@@ -5,19 +5,23 @@
 #![allow(non_snake_case)]
 
 use crate::imports::*;
-use crate::input::{TransactionInput, TransactionInputArrayAsArgT, TransactionInputArrayAsResultT};
+use crate::input::TransactionInput;
 use crate::outpoint::TransactionOutpoint;
-use crate::output::{TransactionOutput, TransactionOutputArrayAsArgT, TransactionOutputArrayAsResultT};
+use crate::output::TransactionOutput;
 use crate::result::Result;
+#[cfg(feature = "wasm32-sdk")]
 use crate::serializable::{numeric, string, SerializableTransactionT};
 use crate::utxo::{UtxoEntryId, UtxoEntryReference};
 use ahash::AHashMap;
 use kaspa_consensus_core::network::NetworkType;
-use kaspa_consensus_core::network::NetworkTypeT;
 use kaspa_consensus_core::subnets::{self, SubnetworkId};
 use kaspa_consensus_core::tx::UtxoEntry;
 use kaspa_txscript::extract_script_pub_key_address;
 use kaspa_utils::hex::*;
+#[cfg(feature = "wasm32-sdk")]
+use kaspa_math::wasm::JsValue;
+#[cfg(feature = "wasm32-sdk")]
+use js_sys::Array;
 
 #[cfg_attr(feature = "wasm32-sdk", wasm_bindgen(typescript_custom_section))]
 const TS_TRANSACTION: &'static str = r#"
@@ -55,11 +59,12 @@ export interface ITransactionVerboseData {
 }
 "#;
 
-#[cfg_attr(feature = "wasm32-sdk", wasm_bindgen)]
+#[cfg(feature = "wasm32-sdk")]
+#[wasm_bindgen]
 extern "C" {
     /// WASM (TypeScript) type representing `ITransaction | Transaction`
     /// @category Consensus
-    #[cfg_attr(feature = "wasm32-sdk", wasm_bindgen(typescript_type = "ITransaction | Transaction"))]
+    #[wasm_bindgen(typescript_type = "ITransaction | Transaction")]
     pub type TransactionT;
 }
 
@@ -86,7 +91,8 @@ pub struct TransactionInner {
 /// transaction-related data such as additional data from UTXOs
 /// used by transaction inputs.
 /// @category Consensus
-#[derive(Clone, Debug, Serialize, Deserialize, CastFromJs)]
+#[derive(Clone, Debug, Serialize, Deserialize)]
+#[cfg_attr(feature = "wasm32-sdk", derive(CastFromJs))]
 #[cfg_attr(feature = "wasm32-sdk", wasm_bindgen(inspectable))]
 pub struct Transaction {
     inner: Arc<Mutex<TransactionInner>>,
@@ -137,7 +143,6 @@ impl Transaction {
     }
 }
 
-#[cfg_attr(feature = "wasm32-sdk", wasm_bindgen)]
 impl Transaction {
     /// Determines whether or not a transaction is a coinbase transaction. A coinbase
     /// transaction is a special transaction created by miners that distributes fees and block subsidy
@@ -153,19 +158,23 @@ impl Transaction {
         self.inner().id = tx.id();
         Ok(self.inner().id)
     }
+}
 
+#[cfg(feature = "wasm32-sdk")]
+#[wasm_bindgen]
+impl Transaction {
     /// Returns the transaction ID
-    #[cfg_attr(feature = "wasm32-sdk", wasm_bindgen(getter, js_name = id))]
+    #[wasm_bindgen(getter, js_name = id)]
     pub fn id_string(&self) -> String {
         self.inner().id.to_string()
     }
 
-    #[cfg_attr(feature = "wasm32-sdk", wasm_bindgen(constructor))]
-    pub fn constructor(js_value: &TransactionT) -> std::result::Result<Transaction, JsError> {
+    #[wasm_bindgen(constructor)]
+    pub fn constructor(js_value: &TransactionT) -> std::result::Result<Transaction, Error> {
         Ok(js_value.try_into_owned()?)
     }
 
-    #[cfg_attr(feature = "wasm32-sdk", wasm_bindgen(getter = inputs))]
+    #[wasm_bindgen(getter = inputs)]
     pub fn get_inputs_as_js_array(&self) -> TransactionInputArrayAsResultT {
         let inputs = self.inner.lock().unwrap().inputs.clone().into_iter().map(JsValue::from);
         Array::from_iter(inputs).unchecked_into()
@@ -174,7 +183,8 @@ impl Transaction {
     /// Returns a list of unique addresses used by transaction inputs.
     /// This method can be used to determine addresses used by transaction inputs
     /// in order to select private keys needed for transaction signing.
-    pub fn addresses(&self, network_type: &NetworkTypeT) -> Result<kaspa_addresses::AddressArrayT> {
+    #[wasm_bindgen(js_name = addresses)]
+    pub fn addresses_js(&self, network_type: &NetworkTypeT) -> Result<kaspa_addresses::AddressArrayT> {
         let mut list = std::collections::HashSet::new();
         for input in &self.inner.lock().unwrap().inputs {
             if let Some(utxo) = input.get_utxo() {
@@ -190,7 +200,7 @@ impl Transaction {
         Ok(Array::from_iter(list.into_iter().map(JsValue::from)).unchecked_into())
     }
 
-    #[cfg_attr(feature = "wasm32-sdk", wasm_bindgen(setter = inputs))]
+    #[wasm_bindgen(setter = inputs)]
     pub fn set_inputs_from_js_array(&mut self, js_value: &TransactionInputArrayAsArgT) {
         let inputs = Array::from(js_value)
             .iter()
@@ -201,13 +211,13 @@ impl Transaction {
         self.inner().inputs = inputs;
     }
 
-    #[cfg_attr(feature = "wasm32-sdk", wasm_bindgen(getter = outputs))]
+    #[wasm_bindgen(getter = outputs)]
     pub fn get_outputs_as_js_array(&self) -> TransactionOutputArrayAsResultT {
         let outputs = self.inner.lock().unwrap().outputs.clone().into_iter().map(JsValue::from);
         Array::from_iter(outputs).unchecked_into()
     }
 
-    #[cfg_attr(feature = "wasm32-sdk", wasm_bindgen(setter = outputs))]
+    #[wasm_bindgen(setter = outputs)]
     pub fn set_outputs_from_js_array(&mut self, js_value: &TransactionOutputArrayAsArgT) {
         let outputs = Array::from(js_value)
             .iter()
@@ -216,68 +226,69 @@ impl Transaction {
         self.inner().outputs = outputs;
     }
 
-    #[cfg_attr(feature = "wasm32-sdk", wasm_bindgen(getter, js_name = version))]
+    #[wasm_bindgen(getter, js_name = version)]
     pub fn get_version(&self) -> u16 {
         self.inner().version
     }
 
-    #[cfg_attr(feature = "wasm32-sdk", wasm_bindgen(setter, js_name = version))]
+    #[wasm_bindgen(setter, js_name = version)]
     pub fn set_version(&self, v: u16) {
         self.inner().version = v;
     }
 
-    #[cfg_attr(feature = "wasm32-sdk", wasm_bindgen(getter, js_name = lockTime))]
+    #[wasm_bindgen(getter, js_name = lockTime)]
     pub fn get_lock_time(&self) -> u64 {
         self.inner().lock_time
     }
 
-    #[cfg_attr(feature = "wasm32-sdk", wasm_bindgen(setter, js_name = lockTime))]
+    #[wasm_bindgen(setter, js_name = lockTime)]
     pub fn set_lock_time(&self, v: u64) {
         self.inner().lock_time = v;
     }
 
-    #[cfg_attr(feature = "wasm32-sdk", wasm_bindgen(getter, js_name = gas))]
+    #[wasm_bindgen(getter, js_name = gas)]
     pub fn get_gas(&self) -> u64 {
         self.inner().gas
     }
 
-    #[cfg_attr(feature = "wasm32-sdk", wasm_bindgen(setter, js_name = gas))]
+    #[wasm_bindgen(setter, js_name = gas)]
     pub fn set_gas(&self, v: u64) {
         self.inner().gas = v;
     }
 
-    #[cfg_attr(feature = "wasm32-sdk", wasm_bindgen(getter = subnetworkId))]
+    #[wasm_bindgen(getter = subnetworkId)]
     pub fn get_subnetwork_id_as_hex(&self) -> String {
         self.inner().subnetwork_id.to_hex()
     }
 
-    #[cfg_attr(feature = "wasm32-sdk", wasm_bindgen(setter = subnetworkId))]
+    #[wasm_bindgen(setter = subnetworkId)]
     pub fn set_subnetwork_id_from_js_value(&mut self, js_value: JsValue) {
         let subnetwork_id = js_value.try_as_vec_u8().unwrap_or_else(|err| panic!("subnetwork id error: {err}"));
         self.inner().subnetwork_id = subnetwork_id.as_slice().try_into().unwrap_or_else(|err| panic!("subnetwork id error: {err}"));
     }
 
-    #[cfg_attr(feature = "wasm32-sdk", wasm_bindgen(getter = payload))]
+    #[wasm_bindgen(getter = payload)]
     pub fn get_payload_as_hex_string(&self) -> String {
         self.inner().payload.to_hex()
     }
 
-    #[cfg_attr(feature = "wasm32-sdk", wasm_bindgen(setter = payload))]
+    #[wasm_bindgen(setter = payload)]
     pub fn set_payload_from_js_value(&mut self, js_value: JsValue) {
         self.inner.lock().unwrap().payload = js_value.try_as_vec_u8().unwrap_or_else(|err| panic!("payload value error: {err}"));
     }
 
-    #[cfg_attr(feature = "wasm32-sdk", wasm_bindgen(getter = mass))]
+    #[wasm_bindgen(getter = mass)]
     pub fn get_mass(&self) -> u64 {
         self.inner().mass
     }
 
-    #[cfg_attr(feature = "wasm32-sdk", wasm_bindgen(setter = mass))]
+    #[wasm_bindgen(setter = mass)]
     pub fn set_mass(&self, v: u64) {
         self.inner().mass = v;
     }
 }
 
+#[cfg(feature = "wasm32-sdk")]
 impl TryCastFromJs for Transaction {
     type Error = Error;
     fn try_cast_from<'a, R>(value: &'a R) -> std::result::Result<Cast<'a, Self>, Self::Error>
@@ -405,7 +416,8 @@ impl Transaction {
             .into_iter()
             .map(|input| {
                 inputs.push(input.as_ref().into());
-                Ok(input.get_utxo().ok_or(Error::MissingUtxoEntry)?.entry().as_ref().into())
+                let utxo_ref = input.utxo().ok_or(Error::MissingUtxoEntry)?;
+                Ok(cctx::UtxoEntry::from(utxo_ref.utxo.as_ref()))
             })
             .collect::<Result<Vec<_>>>()?;
         let outputs: Vec<cctx::TransactionOutput> =
@@ -430,7 +442,7 @@ impl Transaction {
             .inputs
             .clone()
             .into_iter()
-            .map(|input| input.get_utxo().ok_or(Error::MissingUtxoEntry))
+            .map(|input| input.utxo().ok_or(Error::MissingUtxoEntry))
             .collect::<Result<Vec<UtxoEntryReference>>>()?;
         Ok(utxo_entry_references)
     }
@@ -471,43 +483,44 @@ impl Transaction {
     }
 }
 
-#[cfg_attr(feature = "wasm32-sdk", wasm_bindgen)]
+#[cfg(feature = "wasm32-sdk")]
+#[wasm_bindgen]
 impl Transaction {
     /// Serializes the transaction to a pure JavaScript Object.
     /// The schema of the JavaScript object is defined by {@link ISerializableTransaction}.
     /// @see {@link ISerializableTransaction}
-    #[cfg_attr(feature = "wasm32-sdk", wasm_bindgen(js_name = "serializeToObject"))]
+    #[wasm_bindgen(js_name = "serializeToObject")]
     pub fn serialize_to_object(&self) -> Result<SerializableTransactionT> {
         Ok(numeric::SerializableTransaction::from_client_transaction(self)?.serialize_to_object()?.into())
     }
 
     /// Serializes the transaction to a JSON string.
     /// The schema of the JSON is defined by {@link ISerializableTransaction}.
-    #[cfg_attr(feature = "wasm32-sdk", wasm_bindgen(js_name = "serializeToJSON"))]
+    #[wasm_bindgen(js_name = "serializeToJSON")]
     pub fn serialize_to_json(&self) -> Result<String> {
         numeric::SerializableTransaction::from_client_transaction(self)?.serialize_to_json()
     }
 
     /// Serializes the transaction to a "Safe" JSON schema where it converts all `bigint` values to `string` to avoid potential client-side precision loss.
-    #[cfg_attr(feature = "wasm32-sdk", wasm_bindgen(js_name = "serializeToSafeJSON"))]
+    #[wasm_bindgen(js_name = "serializeToSafeJSON")]
     pub fn serialize_to_json_safe(&self) -> Result<String> {
         string::SerializableTransaction::from_client_transaction(self)?.serialize_to_json()
     }
 
     /// Deserialize the {@link Transaction} Object from a pure JavaScript Object.
-    #[cfg_attr(feature = "wasm32-sdk", wasm_bindgen(js_name = "deserializeFromObject"))]
+    #[wasm_bindgen(js_name = "deserializeFromObject")]
     pub fn deserialize_from_object(js_value: &JsValue) -> Result<Transaction> {
         numeric::SerializableTransaction::deserialize_from_object(js_value.clone())?.try_into()
     }
 
     /// Deserialize the {@link Transaction} Object from a JSON string.
-    #[cfg_attr(feature = "wasm32-sdk", wasm_bindgen(js_name = "deserializeFromJSON"))]
+    #[wasm_bindgen(js_name = "deserializeFromJSON")]
     pub fn deserialize_from_json(json: &str) -> Result<Transaction> {
         numeric::SerializableTransaction::deserialize_from_json(json)?.try_into()
     }
 
     /// Deserialize the {@link Transaction} Object from a "Safe" JSON schema where all `bigint` values are represented as `string`.
-    #[cfg_attr(feature = "wasm32-sdk", wasm_bindgen(js_name = "deserializeFromSafeJSON"))]
+    #[wasm_bindgen(js_name = "deserializeFromSafeJSON")]
     pub fn deserialize_from_safe_json(json: &str) -> Result<Transaction> {
         string::SerializableTransaction::deserialize_from_json(json)?.try_into()
     }

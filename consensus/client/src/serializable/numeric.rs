@@ -17,6 +17,9 @@ use ahash::AHashMap;
 use cctx::VerifiableTransaction;
 use kaspa_addresses::Address;
 use kaspa_consensus_core::subnets::SubnetworkId;
+#[cfg(feature = "wasm32-sdk")]
+use kaspa_math::wasm::JsValue;
+#[cfg(feature = "wasm32-sdk")]
 use workflow_wasm::serde::{from_value, to_value};
 
 pub type SignedTransactionIndexType = u32;
@@ -197,6 +200,13 @@ impl From<&cctx::TransactionOutput> for SerializableTransactionOutput {
     }
 }
 
+impl From<&TransactionOutput> for SerializableTransactionOutput {
+    fn from(output: &TransactionOutput) -> Self {
+        let inner = output.inner();
+        Self { value: inner.value, script_public_key: inner.script_public_key.clone() }
+    }
+}
+
 impl TryFrom<SerializableTransactionOutput> for cctx::TransactionOutput {
     type Error = Error;
     fn try_from(output: SerializableTransactionOutput) -> Result<Self> {
@@ -208,14 +218,6 @@ impl TryFrom<&SerializableTransactionOutput> for TransactionOutput {
     type Error = Error;
     fn try_from(output: &SerializableTransactionOutput) -> Result<Self> {
         Ok(TransactionOutput::new(output.value, output.script_public_key.clone()))
-    }
-}
-
-impl TryFrom<&TransactionOutput> for SerializableTransactionOutput {
-    type Error = Error;
-    fn try_from(output: &TransactionOutput) -> Result<Self> {
-        let inner = output.inner();
-        Ok(Self { value: inner.value, script_public_key: inner.script_public_key.clone() })
     }
 }
 
@@ -237,10 +239,12 @@ pub struct SerializableTransaction {
 }
 
 impl SerializableTransaction {
+    #[cfg(feature = "wasm32-sdk")]
     pub fn serialize_to_object(&self) -> Result<JsValue> {
         Ok(to_value(self)?)
     }
 
+    #[cfg(feature = "wasm32-sdk")]
     pub fn deserialize_from_object(object: JsValue) -> Result<Self> {
         Ok(from_value(object)?)
     }
@@ -283,7 +287,7 @@ impl SerializableTransaction {
         let inner = transaction.inner();
 
         let inputs = inner.inputs.iter().map(TryFrom::try_from).collect::<Result<Vec<SerializableTransactionInput>>>()?;
-        let outputs = inner.outputs.iter().map(TryFrom::try_from).collect::<Result<Vec<SerializableTransactionOutput>>>()?;
+        let outputs = inner.outputs.iter().map(|o| SerializableTransactionOutput::from(o.as_ref())).collect::<Vec<SerializableTransactionOutput>>();
 
         Ok(Self {
             inputs,

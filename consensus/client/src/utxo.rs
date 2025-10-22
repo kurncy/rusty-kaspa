@@ -14,7 +14,7 @@ use crate::result::Result;
 use kaspa_addresses::Address;
 use kaspa_consensus_core::mass::{UtxoCell, UtxoPlurality};
 
-#[wasm_bindgen(typescript_custom_section)]
+#[cfg_attr(feature = "wasm32-sdk", wasm_bindgen(typescript_custom_section))]
 const TS_UTXO_ENTRY: &'static str = r#"
 /**
  * Interface defines the structure of a UTXO entry.
@@ -38,6 +38,7 @@ export interface IUtxoEntry {
 
 "#;
 
+#[cfg(feature = "wasm32-sdk")]
 #[wasm_bindgen]
 extern "C" {
     /// WASM type representing an array of [`UtxoEntryReference`] objects (i.e. `UtxoEntryReference[]`)
@@ -57,23 +58,25 @@ pub type UtxoEntryId = TransactionOutpointInner;
 /// [`UtxoEntry`] struct represents a client-side UTXO entry.
 ///
 /// @category Wallet SDK
-#[derive(Clone, Debug, Serialize, Deserialize, CastFromJs)]
+#[derive(Clone, Debug, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
-#[wasm_bindgen(inspectable)]
+#[cfg_attr(feature = "wasm32-sdk", derive(CastFromJs))]
+#[cfg_attr(feature = "wasm32-sdk", wasm_bindgen(inspectable))]
 pub struct UtxoEntry {
-    #[wasm_bindgen(getter_with_clone)]
+    #[cfg_attr(feature = "wasm32-sdk", wasm_bindgen(getter_with_clone))]
     pub address: Option<Address>,
-    #[wasm_bindgen(getter_with_clone)]
+    #[cfg_attr(feature = "wasm32-sdk", wasm_bindgen(getter_with_clone))]
     pub outpoint: TransactionOutpoint,
     pub amount: u64,
-    #[wasm_bindgen(js_name = scriptPublicKey, getter_with_clone)]
+    #[cfg_attr(feature = "wasm32-sdk", wasm_bindgen(js_name = scriptPublicKey, getter_with_clone))]
     pub script_public_key: ScriptPublicKey,
-    #[wasm_bindgen(js_name = blockDaaScore)]
+    #[cfg_attr(feature = "wasm32-sdk", wasm_bindgen(js_name = blockDaaScore))]
     pub block_daa_score: u64,
-    #[wasm_bindgen(js_name = isCoinbase)]
+    #[cfg_attr(feature = "wasm32-sdk", wasm_bindgen(js_name = isCoinbase))]
     pub is_coinbase: bool,
 }
 
+#[cfg(feature = "wasm32-sdk")]
 #[wasm_bindgen]
 impl UtxoEntry {
     #[wasm_bindgen(js_name = toString)]
@@ -98,6 +101,7 @@ impl UtxoEntry {
         self.is_coinbase
     }
 
+    #[cfg(feature = "wasm32-sdk")]
     fn to_js_object(&self) -> Result<js_sys::Object> {
         let obj = js_sys::Object::new();
         if let Some(address) = &self.address {
@@ -139,13 +143,15 @@ impl From<&UtxoEntry> for cctx::UtxoEntry {
 /// [`Arc`] reference to a [`UtxoEntry`] used by the wallet subsystems.
 ///
 /// @category Wallet SDK
-#[derive(Clone, Debug, Serialize, Deserialize, CastFromJs)]
-#[wasm_bindgen(inspectable)]
+#[derive(Clone, Debug, Serialize, Deserialize)]
+#[cfg_attr(feature = "wasm32-sdk", derive(CastFromJs))]
+#[cfg_attr(feature = "wasm32-sdk", wasm_bindgen(inspectable))]
 pub struct UtxoEntryReference {
-    #[wasm_bindgen(skip)]
+    #[cfg_attr(feature = "wasm32-sdk", wasm_bindgen(skip))]
     pub utxo: Arc<UtxoEntry>,
 }
 
+#[cfg(feature = "wasm32-sdk")]
 #[wasm_bindgen]
 impl UtxoEntryReference {
     #[wasm_bindgen(js_name = toString)]
@@ -252,7 +258,7 @@ impl From<UtxoEntry> for UtxoEntryReference {
 
 impl From<&UtxoEntryReference> for UtxoCell {
     fn from(entry: &UtxoEntryReference) -> Self {
-        Self::new(entry.utxo.script_public_key.plurality(), entry.amount())
+        Self::new(entry.utxo.script_public_key.plurality(), entry.utxo.amount())
     }
 }
 
@@ -277,16 +283,19 @@ impl PartialOrd for UtxoEntryReference {
 }
 
 /// An extension trait to convert a JS value into a vec of UTXO entry references.
+#[cfg(feature = "wasm32-sdk")]
 pub trait TryIntoUtxoEntryReferences {
     fn try_into_utxo_entry_references(&self) -> Result<Vec<UtxoEntryReference>>;
 }
 
+#[cfg(feature = "wasm32-sdk")]
 impl TryIntoUtxoEntryReferences for JsValue {
     fn try_into_utxo_entry_references(&self) -> Result<Vec<UtxoEntryReference>> {
         Array::from(self).iter().map(UtxoEntryReference::try_owned_from).collect()
     }
 }
 
+#[cfg(feature = "wasm32-sdk")]
 impl TryCastFromJs for UtxoEntry {
     type Error = Error;
     fn try_cast_from<'a, R>(value: &'a R) -> Result<Cast<'a, Self>, Self::Error>
@@ -305,7 +314,7 @@ impl TryCastFromJs for UtxoEntry {
 /// Please consider using `UtxoContext` instead.
 /// @category Wallet SDK
 #[derive(Default, Clone, Debug, Serialize, Deserialize)]
-#[wasm_bindgen(inspectable)]
+#[cfg_attr(feature = "wasm32-sdk", wasm_bindgen(inspectable))]
 pub struct UtxoEntries(Arc<Vec<UtxoEntryReference>>);
 
 impl UtxoEntries {
@@ -318,6 +327,7 @@ impl UtxoEntries {
     }
 }
 
+#[cfg(feature = "wasm32-sdk")]
 #[wasm_bindgen]
 impl UtxoEntries {
     /// Create a new `UtxoEntries` struct with a set of entries.
@@ -399,6 +409,7 @@ impl From<Vec<UtxoEntryReference>> for UtxoEntries {
     }
 }
 
+#[cfg(feature = "wasm32-sdk")]
 impl TryFrom<JsValue> for UtxoEntries {
     type Error = Error;
     fn try_from(js_value: JsValue) -> std::result::Result<Self, Self::Error> {
@@ -410,6 +421,7 @@ impl TryFrom<JsValue> for UtxoEntries {
     }
 }
 
+#[cfg(feature = "wasm32-sdk")]
 impl TryCastFromJs for UtxoEntryReference {
     type Error = Error;
     fn try_cast_from<'a, R>(value: &'a R) -> Result<Cast<'a, Self>, Self::Error>

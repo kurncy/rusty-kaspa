@@ -41,6 +41,7 @@ serde.workspace = true
 smallvec.workspace = true
 thiserror.workspace = true
 wasm-bindgen.workspace = true
+workflow-serializer.workspace = true
 
 [dev-dependencies]
 criterion.workspace = true

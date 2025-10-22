@@ -2267,8 +2267,6 @@ dependencies = [
  "wasm-bindgen",
  "wasm-bindgen-test",
  "web-sys",
- "workflow-log",
- "workflow-wasm",
 ]
 
 [[package]]
@@ -2496,10 +2494,6 @@ dependencies = [
  "wasm-bindgen",
  "wasm-bindgen-test",
  "web-sys",
- "workflow-core",
- "workflow-log",
- "workflow-serializer",
- "workflow-wasm",
 ]
 
 [[package]]
@@ -3190,7 +3184,6 @@ dependencies = [
  "kaspa-hashes",
  "kaspa-txscript-errors",
  "kaspa-utils",
- "kaspa-wasm-core",
  "log",
  "parking_lot",
  "rand",
@@ -3202,7 +3195,6 @@ dependencies = [
  "smallvec",
  "thiserror",
  "wasm-bindgen",
- "workflow-wasm",
 ]
 
 [[package]]

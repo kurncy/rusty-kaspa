@@ -5,6 +5,7 @@
 use borsh::{BorshDeserialize, BorshSerialize};
 use kaspa_notify::events::EventType;
 use serde::{Deserialize, Serialize};
+#[cfg(feature = "wasm32-sdk")]
 use workflow_core::enums::Describe;
 
 /// API version. Change in this value should result
@@ -14,7 +15,8 @@ pub const RPC_API_VERSION: u16 = 1;
 /// backwards-compatible changes.
 pub const RPC_API_REVISION: u16 = 0;
 
-#[derive(Describe, Clone, Copy, Debug, PartialEq, Eq, Hash, BorshSerialize, BorshDeserialize, Serialize, Deserialize)]
+#[cfg_attr(feature = "wasm32-sdk", derive(Describe))]
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Hash, BorshSerialize, BorshDeserialize, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 #[borsh(use_discriminant = true)]
 pub enum RpcApiOps {

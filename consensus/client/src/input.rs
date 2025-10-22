@@ -10,7 +10,7 @@ use crate::TransactionOutpoint;
 use crate::UtxoEntryReference;
 use kaspa_utils::hex::*;
 
-#[wasm_bindgen(typescript_custom_section)]
+#[cfg_attr(feature = "wasm32-sdk", wasm_bindgen(typescript_custom_section))]
 const TS_TRANSACTION: &'static str = r#"
 /**
  * Interface defines the structure of a transaction input.
@@ -37,6 +37,7 @@ export interface ITransactionInputVerboseData { }
 
 "#;
 
+#[cfg(feature = "wasm32-sdk")]
 #[wasm_bindgen]
 extern "C" {
     /// WASM (TypeScript) type representing `ITransactionInput | TransactionInput`
@@ -78,8 +79,9 @@ impl TransactionInputInner {
 
 /// Represents a Kaspa transaction input
 /// @category Consensus
-#[derive(Clone, Debug, Serialize, Deserialize, CastFromJs)]
-#[wasm_bindgen(inspectable)]
+#[derive(Clone, Debug, Serialize, Deserialize)]
+#[cfg_attr(feature = "wasm32-sdk", derive(CastFromJs))]
+#[cfg_attr(feature = "wasm32-sdk", wasm_bindgen(inspectable))]
 pub struct TransactionInput {
     inner: Arc<Mutex<TransactionInputInner>>,
 }
@@ -117,6 +119,7 @@ impl TransactionInput {
     }
 }
 
+#[cfg(feature = "wasm32-sdk")]
 #[wasm_bindgen]
 impl TransactionInput {
     #[wasm_bindgen(constructor)]
@@ -198,6 +201,7 @@ impl AsRef<TransactionInput> for TransactionInput {
     }
 }
 
+#[cfg(feature = "wasm32-sdk")]
 impl TryCastFromJs for TransactionInput {
     type Error = Error;
     fn try_cast_from<'a, R>(value: &'a R) -> std::result::Result<Cast<'a, Self>, Self::Error>

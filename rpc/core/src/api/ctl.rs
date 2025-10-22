@@ -4,7 +4,20 @@
 
 use crate::error::RpcResult;
 use std::sync::{Arc, Mutex};
+#[cfg(feature = "wasm32-sdk")]
 use workflow_core::channel::Multiplexer;
+#[cfg(not(feature = "wasm32-sdk"))]
+mod _stub {
+	#[derive(Default)]
+	pub struct Multiplexer<T>(std::marker::PhantomData<T>);
+	impl<T: Copy> Multiplexer<T> {
+		pub const fn new() -> Self { Self(std::marker::PhantomData) }
+		pub async fn broadcast(&self, _value: T) -> crate::error::RpcResult<()> { Ok(()) }
+		pub fn try_broadcast(&self, _value: T) -> crate::error::RpcResult<()> { Ok(()) }
+	}
+}
+#[cfg(not(feature = "wasm32-sdk"))]
+use _stub::Multiplexer;
 
 /// RPC channel control operations
 #[derive(Default, Debug, Clone, Copy, PartialEq, Eq)]
@@ -64,25 +77,25 @@ impl RpcCtl {
     /// Signal open to all listeners (async)
     pub async fn signal_open(&self) -> RpcResult<()> {
         *self.inner.state.lock().unwrap() = RpcState::Connected;
-        Ok(self.inner.multiplexer.broadcast(RpcState::Connected).await?)
+        self.inner.multiplexer.broadcast(RpcState::Connected).await
     }
 
     /// Signal close to all listeners (async)
     pub async fn signal_close(&self) -> RpcResult<()> {
         *self.inner.state.lock().unwrap() = RpcState::Disconnected;
-        Ok(self.inner.multiplexer.broadcast(RpcState::Disconnected).await?)
+        self.inner.multiplexer.broadcast(RpcState::Disconnected).await
     }
 
     /// Try signal open to all listeners (sync)
     pub fn try_signal_open(&self) -> RpcResult<()> {
         *self.inner.state.lock().unwrap() = RpcState::Connected;
-        Ok(self.inner.multiplexer.try_broadcast(RpcState::Connected)?)
+        self.inner.multiplexer.try_broadcast(RpcState::Connected)
     }
 
     /// Try signal close to all listeners (sync)
     pub fn try_signal_close(&self) -> RpcResult<()> {
         *self.inner.state.lock().unwrap() = RpcState::Disconnected;
-        Ok(self.inner.multiplexer.try_broadcast(RpcState::Disconnected)?)
+        self.inner.multiplexer.try_broadcast(RpcState::Disconnected)
     }
 
     /// Set the connection descriptor (URL, peer address, etc.)

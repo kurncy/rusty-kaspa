@@ -1,4 +1,5 @@
 pub use crate::error::Error;
+#[cfg(feature = "wasm32-sdk")]
 pub use js_sys::{Array, Object};
 pub use kaspa_consensus_core::tx as cctx;
 pub use kaspa_consensus_core::tx::{ScriptPublicKey, TransactionId, TransactionIndexType};

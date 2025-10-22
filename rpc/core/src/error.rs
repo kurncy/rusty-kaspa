@@ -6,9 +6,12 @@ use kaspa_consensus_core::{subnets::SubnetworkConversionError, tx::TransactionId
 use kaspa_utils::networking::IpAddress;
 use std::{net::AddrParseError, num::TryFromIntError};
 use thiserror::Error;
+#[cfg(feature = "wasm32-sdk")]
 use workflow_core::channel::ChannelError;
 
-use crate::{api::ctl::RpcState, RpcHash, RpcTransactionId, SubmitBlockRejectReason};
+use crate::{RpcHash, RpcTransactionId, SubmitBlockRejectReason};
+#[cfg(feature = "wasm32-sdk")]
+use crate::api::ctl::RpcState;
 
 #[derive(Clone, Debug, Error)]
 pub enum RpcError {
@@ -118,6 +121,7 @@ pub enum RpcError {
     General(String),
 
     #[error("RpcCtl dispatch error")]
+    #[cfg(feature = "wasm32-sdk")]
     RpcCtlDispatchError,
 
     #[error("transaction query must either not filter transactions or include orphans")]
@@ -127,12 +131,15 @@ pub enum RpcError {
     SubnetParsingError(#[from] SubnetworkConversionError),
 
     #[error(transparent)]
+    #[cfg(feature = "wasm32-sdk")]
     WasmError(#[from] workflow_wasm::error::Error),
 
     #[error("{0}")]
+    #[cfg(feature = "wasm32-sdk")]
     SerdeWasmBindgen(String),
 
     #[error(transparent)]
+    #[cfg(feature = "wasm32-sdk")]
     ConsensusClient(#[from] kaspa_consensus_client::error::Error),
 
     #[error("utxo return address could not be found -> {0}")]
@@ -151,12 +158,14 @@ impl From<&str> for RpcError {
     }
 }
 
+#[cfg(feature = "wasm32-sdk")]
 impl From<ChannelError<RpcState>> for RpcError {
     fn from(_: ChannelError<RpcState>) -> Self {
         RpcError::RpcCtlDispatchError
     }
 }
 
+#[cfg(feature = "wasm32-sdk")]
 impl From<serde_wasm_bindgen::Error> for RpcError {
     fn from(value: serde_wasm_bindgen::Error) -> Self {
         RpcError::SerdeWasmBindgen(value.to_string())

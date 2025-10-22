@@ -19,6 +19,7 @@ pub mod convert;
 pub mod error;
 pub mod model;
 pub mod notify;
+#[cfg(feature = "wasm32-sdk")]
 pub mod wasm;
 
 pub mod prelude {

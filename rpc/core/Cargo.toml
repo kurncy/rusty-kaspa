@@ -19,7 +19,6 @@ wasm32-sdk = [
     "dep:serde-wasm-bindgen",
     "dep:wasm-bindgen",
     "dep:workflow-core",
-    "dep:workflow-serializer",
     "dep:workflow-wasm",
 ]
 
@@ -60,7 +59,7 @@ thiserror.workspace = true
 uuid.workspace = true
 wasm-bindgen = { workspace = true, optional = true }
 workflow-core = { workspace = true, optional = true }
-workflow-serializer = { workspace = true, optional = true }
+workflow-serializer = { workspace = true }
 workflow-wasm = { workspace = true, optional = true }
 
 [dev-dependencies]

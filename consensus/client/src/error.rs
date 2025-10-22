@@ -1,7 +1,9 @@
 //! The [`Error`](enum@Error) enum used by this crate
 
 use thiserror::Error;
+#[cfg(feature = "wasm32-sdk")]
 use wasm_bindgen::{JsError, JsValue};
+#[cfg(feature = "wasm32-sdk")]
 use workflow_wasm::jserror::JsErrorData;
 
 #[derive(Debug, Error, Clone)]
@@ -9,9 +11,11 @@ pub enum Error {
     #[error("{0}")]
     Custom(String),
 
+    #[cfg(feature = "wasm32-sdk")]
     #[error(transparent)]
     JsValue(JsErrorData),
 
+    #[cfg(feature = "wasm32-sdk")]
     #[error(transparent)]
     Wasm(#[from] workflow_wasm::error::Error),
 
@@ -33,6 +37,7 @@ pub enum Error {
     #[error(transparent)]
     Sign(#[from] kaspa_consensus_core::sign::Error),
 
+    #[cfg(feature = "wasm32-sdk")]
     #[error(transparent)]
     SerdeWasmBindgen(JsErrorData),
 
@@ -74,6 +79,7 @@ impl From<&str> for Error {
     }
 }
 
+#[cfg(feature = "wasm32-sdk")]
 impl From<Error> for JsValue {
     fn from(value: Error) -> Self {
         match value {
@@ -83,12 +89,14 @@ impl From<Error> for JsValue {
     }
 }
 
+#[cfg(feature = "wasm32-sdk")]
 impl From<JsValue> for Error {
     fn from(err: JsValue) -> Self {
         Self::JsValue(err.into())
     }
 }
 
+#[cfg(feature = "wasm32-sdk")]
 impl From<JsError> for Error {
     fn from(err: JsError) -> Self {
         Self::JsValue(err.into())
@@ -101,6 +109,7 @@ impl From<serde_json::Error> for Error {
     }
 }
 
+#[cfg(feature = "wasm32-sdk")]
 impl From<serde_wasm_bindgen::Error> for Error {
     fn from(err: serde_wasm_bindgen::Error) -> Self {
         Self::SerdeWasmBindgen(JsValue::from(err).into())
